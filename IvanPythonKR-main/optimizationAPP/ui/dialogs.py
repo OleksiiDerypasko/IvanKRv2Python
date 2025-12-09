@@ -18,16 +18,18 @@ from PyQt6.QtWidgets import (
     QWidget,
     QMessageBox,
     QDialog,
+    QHBoxLayout,
     QVBoxLayout,
     QLabel,
     QTableWidget,
     QTableWidgetItem,
     QDialogButtonBox,
     QHeaderView,   # <-- ДОДАНО
+    QFrame,
 )
 
 from core.results_summary import ResultsSummary
-from .styles import MARGIN, SPACING, apply_table_style
+from .styles import MARGIN, SPACING, apply_label_muted, apply_table_style
 
 
 # ---------------------------------------------------------------------------
@@ -63,28 +65,7 @@ def show_about(parent: Optional[QWidget]) -> None:
     """
     Показати діалог "Про програму".
     """
-    text = (
-        "<h3>Мінімізація багатовимірних унімодальних функцій</h3>"
-        "<p>Навчальний програмний продукт для дослідження методів мінімізації "
-        "функцій двох змінних:</p>"
-        "<ul>"
-        "<li>Метод Коші (градієнтний спуск)</li>"
-        "<li>Метод Флетчера–Рівза</li>"
-        "<li>Метод Полака–Ріб’єра</li>"
-        "<li>Метод Ньютона</li>"
-        "<li>Метод Нелдера–Міда</li>"
-        "<li>Метод Хука–Дживса</li>"
-        "</ul>"
-        "<p>Застосунок відображає табличний процес мінімізації, графік f(k) "
-        "та траєкторію на contour-графіку цільової функції.</p>"
-    )
-
-    dlg = QMessageBox(parent)
-    dlg.setIcon(QMessageBox.Icon.Information)
-    dlg.setWindowTitle("Про програму")
-    dlg.setTextFormat(Qt.TextFormat.RichText)
-    dlg.setText(text)
-    dlg.setStandardButtons(QMessageBox.StandardButton.Ok)
+    dlg = AboutDialog(parent)
     dlg.exec()
 
 
@@ -261,3 +242,95 @@ def show_error_dialog(parent: Optional[QWidget], title: str, message: str) -> No
     з сигнатурою (parent, title, message).
     """
     show_error(parent, message=message, title=title)
+
+
+class AboutDialog(QDialog):
+    """
+    Розширене вікно "Про програму" з колонкою, що займає всю висоту діалогу.
+    """
+
+    def __init__(self, parent: Optional[QWidget]) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Про програму")
+        self.setModal(True)
+
+        if parent is not None:
+            self.resize(int(parent.width() * 0.55), parent.height())
+        else:
+            self.resize(760, 640)
+
+        self._build_ui()
+
+    def _build_ui(self) -> None:
+        root = QHBoxLayout(self)
+        root.setContentsMargins(MARGIN, MARGIN, MARGIN, MARGIN)
+        root.setSpacing(SPACING)
+
+        column = QFrame(self)
+        column.setObjectName("aboutColumn")
+        column_layout = QVBoxLayout(column)
+        column_layout.setContentsMargins(MARGIN, MARGIN, MARGIN, MARGIN)
+        column_layout.setSpacing(SPACING)
+
+        title = QLabel("<b>Мінімізація багатовимірних унімодальних функцій</b>", column)
+        title.setWordWrap(True)
+
+        subtitle = QLabel("Навчальний застосунок для дослідження методів оптимізації.", column)
+        subtitle.setWordWrap(True)
+        apply_label_muted(subtitle)
+
+        separator = QFrame(column)
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
+
+        description = QLabel(
+            (
+                "<p>Програма демонструє роботу методів мінімізації функцій двох змінних. "
+                "Візуалізація включає таблицю ітерацій, графік f(k) та траєкторію на "
+                "рівневих лініях цільової функції.</p>"
+            ),
+            column,
+        )
+        description.setWordWrap(True)
+
+        methods = QLabel(
+            """
+            <p><b>Реалізовані методи:</b></p>
+            <ul>
+                <li>Метод Коші (градієнтний спуск)</li>
+                <li>Метод Флетчера–Рівза</li>
+                <li>Метод Полака–Ріб’єра</li>
+                <li>Метод Ньютона</li>
+                <li>Метод Нелдера–Міда</li>
+                <li>Метод Хука–Дживса</li>
+            </ul>
+            """,
+            column,
+        )
+        methods.setWordWrap(True)
+
+        footer = QLabel(
+            "<p><b>Версія:</b> 1.0.0<br/>ЛНУ ім. Івана Франка</p>",
+            column,
+        )
+        footer.setWordWrap(True)
+        apply_label_muted(footer)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok,
+            orientation=Qt.Orientation.Horizontal,
+            parent=self,
+        )
+        buttons.accepted.connect(self.accept)
+
+        column_layout.addWidget(title)
+        column_layout.addWidget(subtitle)
+        column_layout.addWidget(separator)
+        column_layout.addWidget(description)
+        column_layout.addWidget(methods)
+        column_layout.addStretch(1)
+        column_layout.addWidget(footer)
+        column_layout.addWidget(buttons, alignment=Qt.AlignmentFlag.AlignRight)
+
+        root.addWidget(column, stretch=1)
+        root.addStretch(1)

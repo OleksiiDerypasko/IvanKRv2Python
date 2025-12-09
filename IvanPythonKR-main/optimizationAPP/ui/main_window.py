@@ -10,7 +10,6 @@ from typing import Optional
 import numpy as np
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -26,7 +25,6 @@ from core.iteration_result import IterationResult
 from ui.control_panel import ControlPanelWidget, OptimizationConfig
 from ui.table_view import IterationsTableWidget
 from ui.plot_view import PlotView
-from ui.dialogs import show_about
 from ui.styles import apply_label_muted, MARGIN, SPACING
 
 
@@ -45,23 +43,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Мінімізація функцій")
         self.resize(1400, 880)
 
-        self._create_actions()
-        self._create_menu()
         self._create_status_bar()
         self._create_content()
         self._connect_signals()
-
-    # ----------------------------------------------------------------------
-    # Menu + actions
-    # ----------------------------------------------------------------------
-    def _create_actions(self) -> None:
-        self.action_exit = QAction("Вихід", self, shortcut="Ctrl+Q")
-        self.action_about = QAction("Про програму", self)
-
-    def _create_menu(self) -> None:
-        menu = self.menuBar()
-        menu.addMenu("Файл").addAction(self.action_exit)
-        menu.addMenu("Довідка").addAction(self.action_about)
 
     def _create_status_bar(self) -> None:
         status = QStatusBar(self)
@@ -160,9 +144,6 @@ class MainWindow(QMainWindow):
     # Signals
     # ------------------------------------------------------------------
     def _connect_signals(self) -> None:
-        self.action_exit.triggered.connect(self.close)
-        self.action_about.triggered.connect(lambda: show_about(self))
-
         self.control_panel.exitRequested.connect(self.close)
         self.control_panel.clearRequested.connect(self._on_clear_requested)
         self.control_panel.runRequested.connect(self._on_run_requested)

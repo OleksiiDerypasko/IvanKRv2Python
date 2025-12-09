@@ -70,7 +70,7 @@ def build_app_stylesheet() -> str:
     /* Panels */
     QGroupBox {{
         background-color: {p.surface};
-        border: 1px solid {p.border};
+        border: 1px solid {p.border_soft};
         border-radius: {RADIUS}px;
         margin-top: 14px;
     }}
@@ -129,14 +129,25 @@ def build_app_stylesheet() -> str:
 
     /* Inputs */
     QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
-        background-color: {p.surface_alt};
+        background-color: {p.surface};
         border: 1px solid {p.border};
         border-radius: {RADIUS}px;
-        padding: 6px;
+        padding: 6px 8px;
         color: {p.text_main};
     }}
     QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {{
         border: 1px solid {p.accent};
+    }}
+
+    QLabel#functionPreview {{
+        color: {p.text_muted};
+        padding: 4px 0;
+    }}
+
+    QFrame#aboutColumn {{
+        background-color: {p.surface};
+        border: 1px solid {p.border_soft};
+        border-radius: {RADIUS}px;
     }}
 
     /* Checkboxes */

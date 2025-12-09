@@ -44,6 +44,17 @@ from .styles import (
     apply_button_secondary,
 )
 
+FUNCTION_LATEX = {
+    1: r"$f_1(x_1, x_2) = \dfrac{12 + x_1^2 + \dfrac{1 + x_2^2}{x_1^2} + \dfrac{(x_1 x_2)^2 + 100}{(x_1 x_2)^4}}{10}$",
+    2: r"$f_2(x_1, x_2) = (x_1 - x_2)^2 + \dfrac{(x_1 + x_2 - 10)^2}{9}$",
+    3: r"$f_3(x_1, x_2) = 5 (x_2 - 4x_1^3 + 3x_1)^2 + (x_1 + 1)^2$",
+    4: r"$f_4(x_1, x_2) = 5 (x_2 - 4x_1^3 + 3x_1)^2 + (x_1 - 1)^2$",
+    5: r"$f_5(x_1, x_2) = 100 (x_2 - x_1^3 + x_1)^2 + (x_1 - 1)^2$",
+    6: r"$f_6(x_1, x_2) = (0.01(x_1 - 3))^2 - (x_2 - x_1) + e^{20 (x_2 - x_1)}$",
+    7: r"$f_7(x_1, x_2) = 100 (x_2 - x_1^2)^2 + (1 - x_1)^2$",
+    8: r"$f_8(x_1, x_2) = (x_1 - 4)^2 + (x_2 - 4)^2$",
+}
+
 
 # ---------------------------------------------------------------------------
 # Конфігурація запуску оптимізації
@@ -85,6 +96,7 @@ class ControlPanelWidget(QWidget):
         super().__init__(parent)
         self._build_ui()
         self._connect_signals()
+        self._update_function_preview(self.combo_function.currentIndex())
 
     # ------------------------------------------------------------------
     # Побудова UI
@@ -110,18 +122,15 @@ class ControlPanelWidget(QWidget):
         lbl_func = QLabel("Функція:", self.problem_group)
         lbl_func.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.combo_function = QComboBox(self.problem_group)
-        self.combo_function.addItems(
-            [
-                "f₁(x₁, x₂) = (12 + x₁² + (1 + x₂²)/x₁² + ((x₁x₂)² + 100)/(x₁x₂)⁴) / 10",
-                "f₂(x₁, x₂) = (x₁ − x₂)² + (x₁ + x₂ − 10)² / 9",
-                "f₃(x₁, x₂) = 5·(x₂ − 4x₁³ + 3x₁)² + (x₁ + 1)²",
-                "f₄(x₁, x₂) = 5·(x₂ − 4x₁³ + 3x₁)² + (x₁ − 1)²",
-                "f₅(x₁, x₂) = 100·(x₂ − x₁³ + x₁)² + (x₁ − 1)²",
-                "f₆(x₁, x₂) = (0.01·(x₁ − 3))² − (x₂ − x₁) + exp(20·(x₂ − x₁))",
-                "f₇(x₁, x₂) = 100·(x₂ − x₁²)² + (1 − x₁)²   [Розенброк]",
-                "f₈(x₁, x₂) = (x₁ − 4)² + (x₂ − 4)²",
-            ]
+        self.combo_function.addItems([str(i) for i in range(1, 9)])
+
+        self.label_function_preview = QLabel(self.problem_group)
+        self.label_function_preview.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
         )
+        self.label_function_preview.setWordWrap(True)
+        self.label_function_preview.setTextFormat(Qt.TextFormat.RichText)
+        self.label_function_preview.setObjectName("functionPreview")
 
         x_row = QHBoxLayout()
         x_row.setSpacing(SPACING)
@@ -148,6 +157,7 @@ class ControlPanelWidget(QWidget):
 
         problem_layout.addWidget(lbl_func)
         problem_layout.addWidget(self.combo_function)
+        problem_layout.addWidget(self.label_function_preview)
         problem_layout.addLayout(x_row)
 
         main_layout.addWidget(self.problem_group)
@@ -238,8 +248,10 @@ class ControlPanelWidget(QWidget):
         # ------------------------------------------------------------------
         # Нижній ряд кнопок
         # ------------------------------------------------------------------
+        main_layout.addStretch(1)
+
         buttons_row = QHBoxLayout()
-        buttons_row.setContentsMargins(0, SPACING, 0, 0)
+        buttons_row.setContentsMargins(MARGIN // 2, SPACING, MARGIN // 2, 0)
         buttons_row.setSpacing(SPACING)
 
         self.button_run = QPushButton("Запустити", self)
@@ -249,13 +261,15 @@ class ControlPanelWidget(QWidget):
         apply_button_secondary(self.button_clear)
         apply_button_secondary(self.button_exit)
 
+        for btn in (self.button_run, self.button_clear, self.button_exit):
+            btn.setMinimumWidth(110)
+
         buttons_row.addWidget(self.button_run)
         buttons_row.addWidget(self.button_clear)
         buttons_row.addStretch(1)
         buttons_row.addWidget(self.button_exit)
 
         main_layout.addLayout(buttons_row)
-        main_layout.addStretch(1)
 
     # ------------------------------------------------------------------
     # Сигнали
@@ -265,6 +279,7 @@ class ControlPanelWidget(QWidget):
         self.button_run.clicked.connect(self._on_run_clicked)
         self.button_clear.clicked.connect(self._on_clear_clicked)
         self.button_exit.clicked.connect(self._on_exit_clicked)
+        self.combo_function.currentIndexChanged.connect(self._update_function_preview)
 
     # ------------------------------------------------------------------
     # Внутрішні хелпери
@@ -309,6 +324,17 @@ class ControlPanelWidget(QWidget):
             "cubic4",
         ]
         return keys[index]
+
+    def _update_function_preview(self, index: int) -> None:
+        """
+        Оновити відображення LaTeX-представлення обраної функції.
+        """
+        func_id = index + 1
+        latex = FUNCTION_LATEX.get(func_id, "")
+        if latex:
+            self.label_function_preview.setText(latex)
+        else:
+            self.label_function_preview.clear()
 
     def build_config(self) -> OptimizationConfig:
         """
